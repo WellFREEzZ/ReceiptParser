@@ -10,10 +10,11 @@ import ram_saver
 async def parse(link):
     final_data = []
 
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(trust_env=True) as session:
         async with session.get(
                 link) as resp:
             txt = await resp.text()
+            await session.close()
 
     reicept = BeautifulSoup(txt, 'html.parser').find('div', id='fido_cheque_container')
     content = BeautifulSoup(reicept.text, 'html.parser')

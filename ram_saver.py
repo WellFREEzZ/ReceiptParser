@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 
@@ -9,7 +10,7 @@ class Receipt:
         self.partner_positions = False
         self.hz_positions = False
 
-    def check(self, listings: dict):
+    def check(self, listings: dict, st_u: asyncio.Task):
         for position in self.positions:
 
             if position['name'] in listings['our']:
@@ -19,24 +20,27 @@ class Receipt:
             elif position['name'] in listings['hz']:
                 self.hz_positions = True
             else:
-                match input(f'{position["name"]} - это?\n'
-                            f'0 - Наше\n'
-                            f'1 - Арендаторов\n'
-                            f'2 - Хз\n'):
-                    case '0':
-                        self.our_positions = True
-                        listings['our'].append(position["name"])
-                    case '1':
-                        self.partner_positions = True
-                        listings['partner'].append(position["name"])
-                    case '2':
-                        self.hz_positions = True
-                        listings['hz'].append(position["name"])
+                st_u.cancel()
+                result = False
+                while not result:
+                    match input(f'{position["name"]} - это?\n'
+                                f'0 - Наше\n'
+                                f'1 - Арендаторов\n'
+                                f'2 - Хз\n'):
+                        case '0':
+                            self.our_positions = result = True
+                            listings['our'].append(position["name"])
+                        case '1':
+                            self.partner_positions = result = True
+                            listings['partner'].append(position["name"])
+                        case '2':
+                            self.hz_positions = result = True
+                            listings['hz'].append(position["name"])
 
 
 def dump_write(link: str, data: list[dict[str, Any]]):
     with open('dumpfile.txt', 'a') as f:
-        f.write(link.replace('\n', '') + '-|-' + "_|_".join([nm['name'].replace('\n', '') for nm in data]) + '\n')
+        f.write(link + '-|-' + "_|_".join([nm['name'].replace('\n', '') for nm in data]) + '\n')
 
 
 def dump_read(i: int):
@@ -46,3 +50,4 @@ def dump_read(i: int):
                 link, sep, pnames = line.partition('-|-')
                 position_names = [{'name': nm.replace('\n', '')} for nm in pnames.split('_|_')]
                 return Receipt(link, position_names)
+        return False
